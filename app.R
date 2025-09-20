@@ -11,6 +11,7 @@ library(shiny)
 library(plotly)
 library(ggplot2)
 library(leaflet)
+library(dplyr)
 
 pengs <- penguins[!is.na(penguins$sex),]
 
