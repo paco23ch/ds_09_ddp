@@ -1,0 +1,151 @@
+---
+title: "Penguin Information System"
+output: ioslides_presentation
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(plotly)
+library(ggplot2)
+library(leaflet)
+library(dplyr)
+
+pengs <- penguins[!is.na(penguins$sex),]
+
+summary(pengs)
+
+islands = c("Biscoe", "Dream", "Torgersen")
+colors = c("blue", "green", "orange")
+lats = c(-65.67431687652159, -64.73183354043242, -64.76629048892288)
+lons = c(-65.94666214883208, -64.23378445084403, -64.08323121306947)
+
+species = c("Adelie", "Chinstrap", "Gentoo")
+species_colors = c("yellow", "red", "black")
+
+island_loc = data.frame(island=islands, lat=lats, lon=lons, color=colors)
+species_col = data.frame(species=species, species_color=species_colors)
+
+sex_options = unique(pengs$sex)
+year_options = unique(pengs$year)
+species_options = unique(pengs$species)
+
+peng_summary <- pengs %>% 
+  group_by(island, species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+data_with_location <- merge(peng_summary, island_loc, by="island")
+data_with_location <- merge(data_with_location, species_col, by="species")
+
+```
+
+## Information patterns
+
+Penguin data in the antartica is something we need to track as part of our efforts to help maintain the species alive.  The penguins data set provides us with information regarding their physical characteristics, gender and other attributes.
+
+We can use a system that can help us visualize information in a digestable fashion via visualizations.  The current information looks at three species (Adelie, Chinstrap and Gentoo), and it also tracks their location in the Antartica in three main islands (Biscoe, Dream and Torgersen).
+
+By plotting the data, we can understand population for each of the species and the places where they live.
+
+## Species and locations {.columns-2 .smaller}
+
+Adelie penguins reside in all three islands.
+
+```{r Adelie, echo=FALSE, message=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+species="Adelie"
+
+data_to_show <- data_with_location[data_with_location$species==species, ]
+
+this_data <- data_to_show %>% group_by(island,species, lat, lon) %>% summarize(population=sum(population))
+
+this_data %>% 
+  leaflet(width=400, height=400) %>% 
+  addTiles() %>% 
+  addCircleMarkers(weight = this_data$population, lat = this_data$lat, lng = this_data$lon, col=c("green", "orange","blue")) %>% 
+  addLegend(labels=this_data$island, colors=c("green", "orange","blue"))
+```
+
+<p class="forceBreak"></p>
+
+Gentoo and Chinstrap each have very specific locations.
+
+```{r NotAdelie, echo=FALSE, message=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+species="Adelie"
+
+data_to_show <- data_with_location[data_with_location$species!=species, ]
+
+this_data <- data_to_show %>% group_by(island,species, species_color, lat, lon) %>% summarize(population=sum(population))
+
+legend_values <- this_data[]
+
+this_data %>% 
+  leaflet(width=400, height=400) %>% 
+  addTiles() %>% 
+  addCircleMarkers(weight = this_data$population, lat = this_data$lat, lng = this_data$lon, col=this_data$species_color) %>% 
+  addLegend(labels=this_data$species, colors=this_data$species_color)
+```
+
+## Trends by species and gender {.columns-2 .smaller}
+
+The total population of Adelie has been constantly growing, while the Chinstrap and Gentoo have contrasting patterns.
+```{r population_trend, echo=FALSE, message=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+peng_summary_species <- pengs %>% 
+  group_by(species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+fig1 <- peng_summary_species %>% 
+  plot_ly(x=~year, y=~population, height = 400, width=400, split = ~species, frame=~sex, type='scatter', mode='lines')
+
+fig1
+```
+
+<p class="forceBreak"></p>
+
+There seems to be a balance between both genders in every species, even along the years.
+
+```{r population, echo=FALSE, message=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+peng_summary_species <- pengs %>% 
+  group_by(species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+fig2 <- peng_summary_species %>% 
+  plot_ly(x=~species, y=~population, height = 400, width=400, split = ~sex, frame=~year, type='bar')
+
+fig2
+```
+
+## Bill information
+
+If we look at penguin bill characteristics, we can see clearly how each of the species clusters together, and we can also observe higher values overall in male versus female penguins.
+
+```{r bill, echo=FALSE, message=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+fig3 <- pengs %>% 
+  plot_ly(x=~bill_len, y=~bill_dep, split = ~species, frame=~sex, type='scatter')
+
+fig3
+```
+
+
+## Conclusion
+
+- The system currently works on gender, species, location, but can be expended to add other criteria
+  - even other species that are not in the current data set
+- The visualizations on this deck can also be added to it to provide more functionality
+- Functional application can be found at: 

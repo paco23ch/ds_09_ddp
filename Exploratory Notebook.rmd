@@ -1,0 +1,107 @@
+---
+title: "Exploration document"
+# Measurements of Penguins near Palmer Station, Antarctica
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(ggplot2)
+library(leaflet)
+library(dplyr)
+suppressPackageStartupMessages(library(googleVis))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+pengs <- penguins[!is.na(penguins$sex),]
+
+summary(pengs)
+
+islands = c("Biscoe", "Dream", "Torgersen")
+colors = c("blue", "green", "orange")
+lats = c(-65.67431687652159, -64.73183354043242, -64.76629048892288)
+lons = c(-65.94666214883208, -64.23378445084403, -64.08323121306947)
+
+island_loc = data.frame(island=islands, lat=lats, lon=lons, color=colors)
+
+sex_options = unique(pengs$sex)
+year_options = unique(pengs$year)
+species_options = unique(pengs$species)
+
+peng_summary <- pengs %>% 
+  group_by(island, species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+data_with_location <- merge(peng_summary, island_loc, by="island")
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r Adelie, echo=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+species="Adelie"
+
+data_to_show <- data_with_location[data_with_location$species==species, ]
+
+this_data <- data_to_show %>% group_by(island,species, lat, lon) %>% summarize(population=sum(population))
+
+this_data %>% 
+  leaflet() %>% 
+  addTiles() %>% 
+  addCircleMarkers(weight = this_data$population, lat = this_data$lat, lng = this_data$lon, col=c("green", "orange","blue")) %>% 
+  addLegend(labels=this_data$island, colors=c("green", "orange","blue"))
+```
+```{r population_trend, echo=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+peng_summary_species <- pengs %>% 
+  group_by(species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+fig1 <- peng_summary_species %>% 
+  plot_ly(x=~year, y=~population, split = ~species, frame=~sex, type='scatter', mode='lines')
+
+fig1
+```
+
+
+```{r population, echo=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+peng_summary_species <- pengs %>% 
+  group_by(species, sex, year) %>% 
+  summarize(population=n(), 
+            body_mass=mean(body_mass),
+            flipper_len=mean(flipper_len))
+
+fig2 <- peng_summary_species %>% 
+  plot_ly(x=~species, y=~population, split = ~sex, frame=~year, type='bar')
+
+fig2
+```
+
+
+```{r bill, echo=FALSE}
+#stats2$MurderCat <- cut(stats2$Murder, breaks=3, labels=c("green","yellow","red"))
+
+fig3 <- pengs %>% 
+  plot_ly(x=~bill_len, y=~bill_dep, split = ~species, frame=~sex, type='scatter')
+
+fig3
+```
