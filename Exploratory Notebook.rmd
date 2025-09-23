@@ -105,3 +105,8 @@ fig3 <- pengs %>%
 
 fig3
 ```
+
+## Final URLs
+
+App URL: https://01996027-343a-3f33-764f-f9663e8954a4.share.connect.posit.cloud/
+Presentation URL: https://rpubs.com/paco23ch/penguins
